@@ -4,382 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La Roue de l'Infortune</title>
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <style>
-body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            background: radial-gradient(circle at top, #2b2826, #110d0c);
-            color: #eae1dd;
-            margin: 0;
-            padding-top: 20px;
-            box-sizing: border-box;
-            overflow: hidden;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Manrope:wght@400;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Space Grotesk"', 'sans-serif'],
+                        body: ['Manrope', 'sans-serif']
+                    },
+                    colors: {
+                        primary: '#ff89ab',
+                        secondary: '#00fbfb',
+                        tertiary: '#ac89ff',
+                        surface: '#060e1d',
+                        'surface-high': '#1a263c'
+                    }
+                }
+            }
         }
-
-        h1 {
-            color: #f1c94f;
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(241, 201, 79, 0.2);
-            background: linear-gradient(to bottom, #f1c94f, #8c6a20);
+    </script>
+    <style>
+        body { font-family: 'Manrope', sans-serif; background-color: #060e1d; color: #dde5fb; overflow-x: hidden; }
+        h1, h2, h3, .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .glass-panel {
+            background: rgba(26, 38, 60, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(64, 72, 90, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #ff89ab, #00fbfb);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        .btn-glow:hover { box-shadow: 0 0 20px rgba(255, 137, 171, 0.5); }
+        .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.15; z-index: -1; pointer-events: none; }
 
-        .main-container {
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            gap: 40px;
-            width: 100%;
+        .wheel-3d-container {
+            perspective: 1000px;
+            transform-style: preserve-3d;
         }
-
-        .wheel-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: linear-gradient(145deg, #231f1d, #1a1715);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow:
-                inset 1px 1px 2px rgba(255,255,255,0.05),
-                8px 8px 15px rgba(0,0,0,0.6),
-                -4px -4px 10px rgba(60,56,54,0.3),
-                0 0 0 5px #110d0c;
-            border: 2px solid #342f2d;
-        }
-
-        .list-section {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 15px;
-            width: 250px;
-            background: #1f1b19;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: inset 2px 2px 8px rgba(0,0,0,0.8), inset -1px -1px 3px rgba(255,255,255,0.05);
-            border: 1px solid #110d0c;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            background: linear-gradient(to bottom, #2e2927, #231f1d);
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: inset 1px 1px 3px rgba(255,255,255,0.05), 2px 2px 5px rgba(0,0,0,0.5);
-            border: 1px solid #110d0c;
-        }
-
-        label {
-            font-size: 0.95em;
-            color: #bdcabc;
-            font-family: 'Courier New', Courier, monospace;
-        }
-
-        select {
-            width: 60px;
-            padding: 5px;
-            background: #110d0c;
-            color: #6ee591;
-            border: 2px solid #231f1d;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-        }
-
-        .wheel-container {
-            position: relative;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle at center, #110d0c 0%, #000 100%);
-            border-radius: 50%;
-            box-shadow:
-                0 0 0 15px #231f1d,
-                0 0 0 17px #342f2d,
-                0 0 20px 20px rgba(0,0,0,0.8),
-                inset 0 0 20px rgba(0,0,0,0.9);
-            padding: 10px;
-        }
-
-        .pointer {
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-top: 40px solid #f1c94f;
-            z-index: 10;
-            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.6));
-        }
-
-        .pointer::after {
-            content: '';
-            position: absolute;
-            top: -38px;
-            left: -15px;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid #fff;
-            opacity: 0.2;
-        }
-
         canvas {
-            display: block;
-            transition: transform 0s linear;
             border-radius: 50%;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-            width: 100%;
-            height: 100%;
-        }
-
-        textarea {
-            width: 100%;
-            height: 350px;
-            background: #110d0c;
-            color: #6ee591;
-            border: 2px solid #231f1d;
-            border-radius: 5px;
-            padding: 10px;
-            font-size: 1.1em;
-            box-sizing: border-box;
-            box-shadow: inset 2px 2px 8px rgba(0,0,0,0.9);
-            font-family: 'Courier New', Courier, monospace;
-            resize: none;
-            text-shadow: 0 0 5px rgba(110, 229, 145, 0.3);
-        }
-
-        textarea:focus, select:focus {
-            outline: none;
-            border-color: #50c878;
-            box-shadow: inset 2px 2px 8px rgba(0,0,0,0.9), 0 0 5px rgba(80, 200, 120, 0.5);
-        }
-
-        .button {
-            padding: 15px 20px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            color: #eae1dd;
-            border: 1px solid #110d0c;
-            border-radius: 8px;
-            transition: all 0.1s;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-            font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
-        }
-
-        #updateButton {
-            background: linear-gradient(to bottom, #393431, #231f1d);
             box-shadow:
-                inset 1px 1px 1px rgba(255,255,255,0.1),
-                0 4px 6px rgba(0,0,0,0.6),
-                0 1px 2px rgba(0,0,0,0.4);
-            color: #6ee591;
+                0 0 0 10px rgba(26, 38, 60, 0.8),
+                0 0 40px rgba(0, 251, 251, 0.2),
+                inset 0 0 20px rgba(0,0,0,0.5);
+            transform: rotateX(15deg);
         }
-        #updateButton:hover {
-            background: linear-gradient(to bottom, #443e3a, #2e2927);
-        }
-        #updateButton:active {
-            transform: translateY(2px);
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
+        .pointer-3d {
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+            transform: translateZ(50px) translateY(-10px);
         }
 
-        #spinButton {
-            margin-top: 30px;
-            background: linear-gradient(to bottom, #ffb4ab, #93000a);
-            box-shadow:
-                inset 1px 1px 2px rgba(255,255,255,0.3),
-                0 6px 10px rgba(0,0,0,0.8),
-                0 2px 4px rgba(0,0,0,0.6);
-            border: 2px solid #570008;
-            border-radius: 12px;
-            padding: 20px 30px;
-            font-size: 1.3em;
-        }
-        #spinButton:not(:disabled):hover {
-            background: linear-gradient(to bottom, #ffdad6, #ba1a1a);
-        }
-        #spinButton:not(:disabled):active {
-            transform: translateY(4px);
-            box-shadow: inset 3px 3px 8px rgba(0,0,0,0.9);
-        }
-        #spinButton:disabled {
-            background: linear-gradient(to bottom, #393431, #231f1d);
-            color: #879487;
-            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
-            cursor: not-allowed;
-            border-color: #1f1b19;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(17, 13, 12, 0.85);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-overlay.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #2e2927, #1f1b19);
-            padding: 40px 50px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow:
-                inset 1px 1px 2px rgba(255,255,255,0.05),
-                0 20px 40px rgba(0,0,0,0.8),
-                0 0 0 5px #110d0c,
-                0 0 0 8px #393431;
-            border: 2px solid #161311;
-        }
-
-        .modal-content h2 {
-            margin-top: 0;
-            color: #f1c94f;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 2px groove #393431;
-            padding-bottom: 15px;
-        }
-
-        #modalWinnerName {
-            margin: 20px 0;
-            font-weight: bold;
-            color: #6ee591;
-            text-shadow: 0 0 10px rgba(110, 229, 145, 0.4);
-            background: #110d0c;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
-            border: 1px solid #231f1d;
-        }
-
-        .modal-content ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        #closeModalButton {
-            background: linear-gradient(to bottom, #393431, #231f1d);
-            margin-top: 20px;
-            box-shadow:
-                inset 1px 1px 1px rgba(255,255,255,0.1),
-                0 4px 6px rgba(0,0,0,0.6);
-        }
-
-        #closeModalButton:hover {
-            background: linear-gradient(to bottom, #443e3a, #2e2927);
-        }
-
-        #closeModalButton:active {
-            transform: translateY(2px);
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8);
-        }
-
-
-        #modalTitle {
-            margin-top: 0;
-            color: #FFCE56;
-        }
-
-        #modalWinnerName {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #FFF;
-            margin: 20px 0;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        #modalWinnerName ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            font-size: 1.8em;
-            text-align: left;
-        }
-        #modalWinnerName li {
-            padding: 5px;
-            border-bottom: 1px solid #555;
-        }
-        #modalWinnerName li:last-child {
-            border-bottom: none;
-        }
-
-        #closeModalButton {
-            background-color: #007BFF;
-        }
-        #closeModalButton:hover {
-            background-color: #0056b3;
-        }
+        /* Modal hiding classes */
+        #winnerModal { display: none; }
+        #winnerModal.show { display: flex; }
     </style>
+
 </head>
-<body>
 
-    <h1>Tirage au sort !</h1>
+<body class="bg-surface text-[#dde5fb] min-h-screen flex flex-col items-center pt-8 relative">
 
-    <div class="main-container">
+    <!-- Ambient Orbs -->
+    <div class="orb w-[600px] h-[600px] bg-primary top-[-100px] left-[-200px]"></div>
+    <div class="orb w-[500px] h-[500px] bg-secondary bottom-[-100px] right-[-100px]"></div>
+    <div class="orb w-[400px] h-[400px] bg-tertiary top-[20%] right-[10%]"></div>
 
-        <div class="wheel-section">
-            <div class="wheel-container">
-                <div class="pointer"></div>
-                <canvas id="wheelCanvas" width="600" height="600"></canvas>
+    <h1 class="text-6xl font-bold mb-10 tracking-tight font-display text-gradient drop-shadow-lg z-10">La Roue de l'Infortune</h1>
+
+    <div class="flex flex-col xl:flex-row items-center xl:items-start justify-center gap-12 w-full max-w-7xl px-4 z-10">
+
+        <div class="wheel-section glass-panel p-10 rounded-[3rem] flex flex-col items-center relative">
+
+            <div class="wheel-3d-container relative w-[600px] h-[600px] flex justify-center items-center">
+                <div class="pointer-3d absolute top-[-20px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[40px] border-t-primary z-20"></div>
+                <div class="pointer-3d absolute top-[-25px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-white opacity-40 z-20"></div>
+
+                <canvas id="wheelCanvas" width="600" height="600" class="w-full h-full"></canvas>
             </div>
-            <button id="spinButton" class="button">...</button>
+
+            <button id="spinButton" class="mt-12 bg-gradient-to-r from-primary to-[#ff5290] text-[#490013] font-display font-bold text-2xl py-5 px-12 rounded-full shadow-[0_0_30px_rgba(255,137,171,0.4)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,137,171,0.7)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                LANCER LE TIRAGE
+            </button>
         </div>
 
-        <div class="list-section">
-            <h2>Participants</h2>
-            <textarea id="nameList"></textarea>
+        <div class="list-section glass-panel p-8 rounded-3xl w-full max-w-sm flex flex-col gap-6">
+            <h2 class="text-2xl font-display font-semibold text-secondary mb-2">Paramètres</h2>
 
-            <div class="control-group">
-                <label for="drawCountSelect">Tirer [ <select id="drawCountSelect"></select> ] gagnant(s)</label>
+            <div class="flex flex-col gap-2">
+                <label for="nameList" class="text-sm uppercase tracking-wider text-[#a3abc0]">Participants</label>
+                <textarea id="nameList" class="w-full h-[300px] bg-[#0a1324]/80 border border-[#40485a]/50 rounded-2xl p-4 text-[#dde5fb] font-body resize-none focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors"></textarea>
             </div>
 
-            <button id="updateButton" class="button">Mettre à jour la roue</button>
-        </div>
+            <div class="flex items-center justify-between bg-[#0a1324]/80 border border-[#40485a]/50 p-4 rounded-2xl">
+                <label for="drawCountSelect" class="text-sm uppercase tracking-wider text-[#a3abc0]">Nombre de gagnants :</label>
+                <select id="drawCountSelect" class="bg-surface text-secondary border border-[#40485a] rounded-lg px-3 py-1 font-display font-bold focus:outline-none focus:border-primary">
+                    <option value="1">1</option>
+                </select>
+            </div>
 
+            <button id="updateButton" class="w-full bg-[#1a263c] border border-[#40485a] hover:bg-[#22304a] hover:border-secondary text-[#dde5fb] font-display font-semibold py-3 rounded-xl transition-all duration-300 active:scale-95">
+                Mettre à jour la roue
+            </button>
+        </div>
     </div>
 
-    <div id="winnerModal" class="modal-overlay">
-        <div class="modal-content">
-            <h2 id="modalTitle">Le Gagnant Est :</h2>
-            <div id="modalWinnerName"></div>
-            <button id="closeModalButton" class="button">Fermer</button>
+    <!-- Modal -->
+    <div id="winnerModal" class="modal-overlay fixed inset-0 bg-[#060e1d]/80 backdrop-blur-md hidden justify-center items-center z-50">
+        <div class="modal-content glass-panel p-12 rounded-[3rem] text-center max-w-lg w-full transform scale-95 opacity-0">
+            <h2 id="modalTitle" class="text-3xl font-display font-bold text-tertiary mb-6 uppercase tracking-wider">Le Gagnant Est :</h2>
+            <div id="modalWinnerName" class="text-5xl font-display font-bold text-gradient mb-10 drop-shadow-[0_0_15px_rgba(255,137,171,0.5)]"></div>
+            <button id="closeModalButton" class="bg-surface border border-[#40485a] hover:bg-[#1a263c] hover:border-secondary text-[#dde5fb] font-display font-semibold py-3 px-8 rounded-full transition-all duration-300 active:scale-95">
+                Continuer
+            </button>
         </div>
     </div>
 
-
-    <script>
+<script>
         // JAVASCRIPT - Le moteur (v4.8.1)
 
         const defaultParticipants = [
@@ -397,10 +144,10 @@ body {
         ];
 
         let participants = [];
-        const colors = [
-            '#8B0000', '#00008B', '#B8860B', '#006400', '#4B0082', '#D2691E',
-            '#8B0000', '#00008B', '#B8860B', '#006400', '#4B0082', '#D2691E',
-            '#8B0000', '#00008B', '#B8860B', '#006400', '#4B0082', '#D2691E'
+                const colors = [
+            '#ff89ab', '#00fbfb', '#ac89ff', '#ff709e', '#00ecec', '#bda1ff',
+            '#ff89ab', '#00fbfb', '#ac89ff', '#ff709e', '#00ecec', '#bda1ff',
+            '#ff89ab', '#00fbfb', '#ac89ff', '#ff709e', '#00ecec', '#bda1ff'
         ];
 
         const canvas = document.getElementById('wheelCanvas');
@@ -429,22 +176,36 @@ body {
             spinButton.textContent = buttonNames[randomIndex];
         }
 
-        function showWinnerModal() {
+                function showWinnerModal() {
             if (currentWinners.length === 1) {
                 modalTitle.textContent = "Le Gagnant Est :";
                 modalWinnerName.innerHTML = currentWinners[0];
-                modalWinnerName.style.fontSize = "2.5em";
             } else {
                 modalTitle.textContent = "Les Gagnants Sont :";
-                const listHtml = `<ul>${currentWinners.map(w => `<li>${w}</li>`).join('')}</ul>`;
+                const listHtml = `<ul class="flex flex-col gap-2">${currentWinners.map(w => `<li>${w}</li>`).join('')}</ul>`;
                 modalWinnerName.innerHTML = listHtml;
-                modalWinnerName.style.fontSize = "1.8em";
+                modalWinnerName.classList.remove('text-5xl');
+                modalWinnerName.classList.add('text-3xl');
             }
             winnerModal.classList.add('show');
+
+            // GSAP Entrance Animation
+            gsap.fromTo(".modal-content",
+                { scale: 0.8, opacity: 0, y: 50 },
+                { scale: 1, opacity: 1, y: 0, duration: 0.6, ease: "back.out(1.5)" }
+            );
         }
 
         function hideWinnerModal() {
-            winnerModal.classList.remove('show');
+            gsap.to(".modal-content", {
+                scale: 0.8, opacity: 0, y: 50, duration: 0.3, ease: "power2.in",
+                onComplete: () => {
+                    winnerModal.classList.remove('show');
+                    // reset classes
+                    modalWinnerName.classList.remove('text-3xl');
+                    modalWinnerName.classList.add('text-5xl');
+                }
+            });
         }
 
         // C'est cette fonction qui était buggée dans le v4.7
@@ -521,6 +282,9 @@ body {
                 ctx.arc(centerX, centerY, radius, startAngle, endAngle);
                 ctx.closePath();
                 ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#1a263c";
+                ctx.stroke();
 
                 ctx.save();
                 ctx.fillStyle = '#000';
@@ -560,7 +324,7 @@ body {
 
         const spinDuration = 6000;
 
-        function performSingleSpin() {
+                function performSingleSpin() {
             if (spinsRemaining <= 0 || participants.length === 0) {
                 endSpinProcess();
                 return;
@@ -576,10 +340,13 @@ body {
 
             currentRotation += totalRotation;
 
-            canvas.style.transition = `transform ${durationInSeconds}s cubic-bezier(0.1, 0.8, 0.2, 1)`;
-            canvas.style.transform = `rotate(${currentRotation}deg)`;
-
-            setTimeout(handleSpinEnd, spinDuration);
+            // GSAP Animation instead of CSS transition
+            gsap.to(canvas, {
+                rotation: currentRotation,
+                duration: durationInSeconds,
+                ease: "power4.out",
+                onComplete: handleSpinEnd
+            });
         }
 
         function handleSpinEnd() {
