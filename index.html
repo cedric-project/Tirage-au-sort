@@ -117,7 +117,7 @@
             width: 40px;
             height: 40px;
             background: #fff;
-            clip-path: polygon(100% 50%, 0 0, 0 100%);
+            clip-path: polygon(0 50%, 100% 0, 100% 100%);
             filter: drop-shadow(-5px 0px 10px rgba(255, 255, 255, 0.8)) drop-shadow(-10px 0px 20px rgba(0, 243, 255, 0.8));
             z-index: 30;
         }
@@ -489,14 +489,14 @@
 
             (function frame() {
                 confetti({
-                    particleCount: 25,
+                    particleCount: 12,
                     angle: 60,
                     spread: 55,
                     origin: { x: 0 },
                     colors: ['#ff007f', '#00f3ff', '#7000ff', '#ffea00', '#00ff66', '#ff5e00']
                 });
                 confetti({
-                    particleCount: 25,
+                    particleCount: 12,
                     angle: 120,
                     spread: 55,
                     origin: { x: 1 },
@@ -504,7 +504,7 @@
                 });
 
                 confetti({
-                    particleCount: 50,
+                    particleCount: 25,
                     spread: 160,
                     origin: { y: 0.6 },
                     colors: ['#ff007f', '#00f3ff', '#7000ff', '#ffea00', '#00ff66', '#ff5e00'],
