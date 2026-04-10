@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Roue de l'Infortune</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+            color: white;
+            margin: 0;
+            padding-top: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #FFF;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+        }
+
+        .wheel-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .list-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+            width: 250px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background-color: #444;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        label {
+            font-size: 0.95em;
+        }
+
+        select {
+            width: 60px;
+            padding: 5px;
+            background-color: #555;
+            color: white;
+            border: 1px solid #777;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 600px; 
+            height: 600px;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -10px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #FFD700;
+            z-index: 10;
+        }
+
+        canvas {
+            display: block;
+            transition: transform 0s linear; 
+        }
+
+        textarea {
+            width: 100%;
+            height: 350px;
+            background-color: #444;
+            color: white;
+            border: 1px solid #777;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 1.1em;
+            box-sizing: border-box;
+        }
+
+        .button {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        #updateButton { background-color: #007BFF; }
+        #updateButton:hover { background-color: #0056b3; }
+        #spinButton { margin-top: 20px; background-color: #4CAF50; }
+        #spinButton:not(:disabled):hover { background-color: #45a049; }
+        #spinButton:disabled { background-color: #777; cursor: not-allowed; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #3a3a3a;
+            padding: 30px 40px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        
+        #modalTitle {
+            margin-top: 0;
+            color: #FFCE56;
+        }
+        
+        #modalWinnerName {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #FFF;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        #modalWinnerName ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 1.8em;
+            text-align: left;
+        }
+        #modalWinnerName li {
+            padding: 5px;
+            border-bottom: 1px solid #555;
+        }
+        #modalWinnerName li:last-child {
+            border-bottom: none;
+        }
+        
+        #closeModalButton {
+            background-color: #007BFF;
+        }
+        #closeModalButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tirage au sort !</h1>
+
+    <div class="main-container">
+
+        <div class="wheel-section">
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <canvas id="wheelCanvas" width="600" height="600"></canvas>
+            </div>
+            <button id="spinButton" class="button">...</button>
+        </div>
+
+        <div class="list-section">
+            <h2>Participants</h2>
+            <textarea id="nameList"></textarea>
+
+            <div class="control-group">
+                <label for="drawCountSelect">Tirer [ <select id="drawCountSelect"></select> ] gagnant(s)</label>
+            </div>
+            
+            <button id="updateButton" class="button">Mettre à jour la roue</button>
+        </div>
+
+    </div>
+    
+    <div id="winnerModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modalTitle">Le Gagnant Est :</h2>
+            <div id="modalWinnerName"></div>
+            <button id="closeModalButton" class="button">Fermer</button>
+        </div>
+    </div>
+
+
+    <script>
+        // JAVASCRIPT - Le moteur (v4.8.1)
+        
+        const defaultParticipants = [
+            'GUILLAS Ronan', 'POULET Mael', 'CLAVEL Dorian', 'DESIRE Dylan',
+            'CHOPIN Sunila', 'COSTE Denis', 'CHANDLER Cedric', 'BEVIS Guillaume',
+            'PERCHERON Nathan', 'BERENGER Quentin', 'FEUILLIE Cedric', 'JOUBERT Jérôme'
+        ];
+        
+        const buttonNames = [
+            "QUI S'Y COLLE ?", "DÉSIGNER LA VICTIME", "QUE LE SORT DÉCIDE !", 
+            "CHOISIR L'ÉLU", "DÉSIGNER LE \"VOLONTAIRE\"", "CHERCHER LE PIGEON", 
+            "SACRIFIER UN COLLÈGUE", "QUI VA MORFLER ?", "QUI VA TRINQUER ?", 
+            "LA PATATE CHAUDE", "LA ROUE DE L'INFORTUNE", "ET LE \"GAGNANT\" EST...", 
+            "PLOUF-PLOUF..."
+        ];
+
+        let participants = []; 
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+        ];
+
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        const updateButton = document.getElementById('updateButton');
+        const nameListTextArea = document.getElementById('nameList');
+        const drawCountSelect = document.getElementById('drawCountSelect');
+        const winnerModal = document.getElementById('winnerModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalWinnerName = document.getElementById('modalWinnerName');
+        const closeModalButton = document.getElementById('closeModalButton');
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 - 10;
+        
+        let currentRotation = 0;
+        let isSpinning = false;
+        let spinsRemaining = 0;
+        let currentWinners = [];
+        let originalParticipantsBeforeSpin = [];
+
+        function setRandomButtonText() {
+            const randomIndex = Math.floor(Math.random() * buttonNames.length);
+            spinButton.textContent = buttonNames[randomIndex];
+        }
+
+        function showWinnerModal() {
+            if (currentWinners.length === 1) {
+                modalTitle.textContent = "Le Gagnant Est :";
+                modalWinnerName.innerHTML = currentWinners[0];
+                modalWinnerName.style.fontSize = "2.5em";
+            } else {
+                modalTitle.textContent = "Les Gagnants Sont :";
+                const listHtml = `<ul>${currentWinners.map(w => `<li>${w}</li>`).join('')}</ul>`;
+                modalWinnerName.innerHTML = listHtml;
+                modalWinnerName.style.fontSize = "1.8em";
+            }
+            winnerModal.classList.add('show');
+        }
+
+        function hideWinnerModal() {
+            winnerModal.classList.remove('show');
+        }
+
+        // C'est cette fonction qui était buggée dans le v4.7
+        // et que j'ai corrigée pour la v4.8
+        function populateDrawCountSelect(count) {
+            const oldValue = parseInt(drawCountSelect.value) || 1;
+            
+            drawCountSelect.innerHTML = '';
+            
+            if (count === 0) {
+                const option = document.createElement('option');
+                option.value = 0;
+                option.textContent = 0;
+                drawCountSelect.appendChild(option);
+            } else {
+                for (let i = 1; i <= count; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    drawCountSelect.appendChild(option);
+                }
+            }
+            
+            if (oldValue > 0 && oldValue <= count) {
+                drawCountSelect.value = oldValue;
+            } else {
+                drawCountSelect.value = 1;
+            }
+        }
+
+        function updateWheelFromList() {
+            const namesRaw = nameListTextArea.value.trim();
+            participants = namesRaw.split('\n')
+                                 .map(name => name.trim())
+                                 .filter(name => name.length > 0);
+            
+            populateDrawCountSelect(participants.length);
+            drawWheel();
+        }
+
+        function drawWheel() {
+            // ... (drawWheel est inchangée)
+            const numSegments = participants.length;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (numSegments === 0) {
+                ctx.fillStyle = '#555';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText("Liste vide !", centerX, centerY);
+                spinButton.disabled = true;
+                return;
+            }
+
+            spinButton.disabled = false;
+            const arcSize = (2 * Math.PI) / numSegments;
+            
+            let fontSize = 20;
+            if (numSegments > 12) fontSize = 18;
+            if (numSegments > 18) fontSize = 16;
+            if (numSegments > 25) fontSize = 14;
+
+            for (let i = 0; i < numSegments; i++) {
+                const startAngle = i * arcSize;
+                const endAngle = (i + 1) * arcSize;
+                
+                ctx.beginPath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.save();
+                ctx.fillStyle = '#000';
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.textBaseline = 'middle';
+                const midAngle = startAngle + arcSize / 2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate(midAngle);
+                const isReversed = (midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5);
+                ctx.textAlign = 'center';
+
+                if (isReversed) {
+                    ctx.rotate(Math.PI);
+                    ctx.fillText(participants[i], -(radius * 0.5), 0); 
+                } else {
+                    ctx.fillText(participants[i], (radius * 0.5), 0);
+                }
+                ctx.restore(); 
+            }
+        }
+        
+        function startSpinProcess() {
+            if (isSpinning) return;
+            if (participants.length === 0) return;
+
+            isSpinning = true;
+            toggleControls(false);
+            
+            spinsRemaining = parseInt(drawCountSelect.value) || 1;
+            if (spinsRemaining > participants.length) {
+                spinsRemaining = participants.length;
+            }
+            currentWinners = [];
+            
+            performSingleSpin();
+        }
+        
+        const spinDuration = 6000;
+        
+        function performSingleSpin() {
+            if (spinsRemaining <= 0 || participants.length === 0) {
+                endSpinProcess();
+                return;
+            }
+            
+            originalParticipantsBeforeSpin = [...participants];
+
+            const durationInSeconds = spinDuration / 1000;
+            const rotations = 5;
+            
+            const randomSpin = Math.random() * 360;
+            const totalRotation = (rotations * 360) + randomSpin;
+            
+            currentRotation += totalRotation;
+            
+            canvas.style.transition = `transform ${durationInSeconds}s cubic-bezier(0.1, 0.8, 0.2, 1)`;
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(handleSpinEnd, spinDuration);
+        }
+        
+        function handleSpinEnd() {
+            if (!isSpinning) return;
+
+            const numSegments = originalParticipantsBeforeSpin.length;
+            if (numSegments === 0) return; 
+
+            const degreesPerSegment = 360 / numSegments;
+            const offsetDegrees = 270; 
+            const normalizedAngle = (360 - (currentRotation % 360) + offsetDegrees) % 360;
+            const winnerIndex = Math.floor(normalizedAngle / degreesPerSegment);
+            
+            const winner = originalParticipantsBeforeSpin[winnerIndex];
+
+            currentWinners.push(winner);
+            spinsRemaining--;
+
+            confetti({
+                particleCount: 150, spread: 90, origin: { y: 0.6 },
+                colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+            });
+
+            const indexToRemove = participants.indexOf(winner);
+            if (indexToRemove > -1) {
+                participants.splice(indexToRemove, 1);
+            }
+            nameListTextArea.value = participants.join('\n');
+            
+            if (spinsRemaining > 0) {
+                setTimeout(() => {
+                    updateWheelFromList();
+                    performSingleSpin();
+                }, 1500);
+            } else {
+                endSpinProcess();
+            }
+        }
+        
+        function endSpinProcess() {
+            isSpinning = false;
+            toggleControls(true);
+            
+            canvas.style.transition = 'transform 0s linear';
+            
+            showWinnerModal();
+        }
+        
+        function toggleControls(enabled) {
+            spinButton.disabled = !enabled;
+            updateButton.disabled = !enabled;
+            drawCountSelect.disabled = !enabled;
+            nameListTextArea.disabled = !enabled;
+        }
+
+        // --- DÉMARRAGE ---
+        spinButton.addEventListener('click', startSpinProcess);
+        
+        // LA LIGNE QUI CASSAIT TOUT (le 'g' fantôme) EST VÉRIFIÉE
+        updateButton.addEventListener('click', updateWheelFromList); 
+
+        closeModalButton.addEventListener('click', () => {
+            hideWinnerModal();
+            updateWheelFromList();
+            setRandomButtonText();
+        });
+        
+        // Chargement initial
+        nameListTextArea.value = defaultParticipants.join('\n');
+        setRandomButtonText();
+        updateWheelFromList();
+
+    </script>
+
+</body>
+</html>
